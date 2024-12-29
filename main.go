@@ -39,22 +39,26 @@ func readinessHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func main() {
-	fmt.Println("Starting server...")
-
-	const prefix = "/app"
 	const filepathRoot = "."
 	const port = "8080"
 
-	serveMux := http.NewServeMux() // router
-	config := apiConfig{}
+	apiCfg := apiConfig{
+		fileserverHits: atomic.Int32{},
+	}
 
-	serveMux.Handle(prefix+"/", config.middlewareMetricsInc(http.StripPrefix(prefix, http.FileServer(http.Dir(filepathRoot)))))
-	serveMux.HandleFunc("GET /healthz", readinessHandler)
-	serveMux.HandleFunc("GET /metrics", config.metricsHandler)
-	serveMux.HandleFunc("POST /reset", config.resetHandler)
+	mux := http.NewServeMux()
+	fsHandler := apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot))))
+	mux.Handle("/app/", fsHandler)
 
-	server := http.Server{Addr: ":" + port, Handler: serveMux}
+	mux.HandleFunc("GET /api/healthz", readinessHandler)
+	mux.HandleFunc("POST /api/reset", apiCfg.resetHandler)
+	mux.HandleFunc("GET /api/metrics", apiCfg.metricsHandler)
+
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: mux,
+	}
 
 	log.Printf("Serving files from %s on port: %s\n", filepathRoot, port)
-	log.Fatal(server.ListenAndServe())
+	log.Fatal(srv.ListenAndServe())
 }
