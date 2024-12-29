@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync/atomic"
 )
 
@@ -19,10 +20,16 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 }
 
 func (cfg *apiConfig) metricsHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 
-	msg := fmt.Sprintf("Hits: %v", cfg.fileserverHits.Load())
+	hits := cfg.fileserverHits.Load()
+	htmlData, err := os.ReadFile("metrics.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	msg := fmt.Sprintf(string(htmlData), hits)
 	w.Write([]byte(msg))
 }
 
@@ -51,8 +58,8 @@ func main() {
 	mux.Handle("/app/", fsHandler)
 
 	mux.HandleFunc("GET /api/healthz", readinessHandler)
-	mux.HandleFunc("POST /api/reset", apiCfg.resetHandler)
-	mux.HandleFunc("GET /api/metrics", apiCfg.metricsHandler)
+	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
