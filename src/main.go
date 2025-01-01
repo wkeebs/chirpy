@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -18,6 +17,7 @@ import (
 type apiConfig struct {
 	fileserverHits atomic.Int32 // thread safe
 	db             *database.Queries
+	platform       string
 }
 
 type User struct {
@@ -25,33 +25,6 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
-}
-
-func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileserverHits.Add(1)
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (cfg *apiConfig) metricsHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Add("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-
-	hits := cfg.fileserverHits.Load()
-	htmlData, err := os.ReadFile("metrics.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	msg := fmt.Sprintf(string(htmlData), hits)
-	w.Write([]byte(msg))
-}
-
-func (cfg *apiConfig) resetHandler(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	cfg.fileserverHits.Store(0)
-	w.Write([]byte("Metrics reset"))
 }
 
 func readinessHandler(w http.ResponseWriter, _ *http.Request) {
@@ -62,6 +35,12 @@ func readinessHandler(w http.ResponseWriter, _ *http.Request) {
 
 func main() {
 	godotenv.Load() // get env
+
+	// get platform
+	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatal("PLATFORM must be set")
+	}
 
 	// connect to db
 	dbURL := os.Getenv("DB_URL")
@@ -81,6 +60,7 @@ func main() {
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
+		platform:       platform,
 	}
 
 	mux := http.NewServeMux()
