@@ -5,6 +5,28 @@ import (
 	"net/http"
 )
 
+func (cfg *apiConfig) getAllUsersHandler(w http.ResponseWriter, r *http.Request) {
+	users, err := cfg.db.GetAllUsers(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to get Chirps", err)
+		return
+	}
+
+	// map for correct json representation
+	var respUsers []User
+	for _, u := range users {
+		respUsers = append(respUsers, User{
+			ID:        u.ID,
+			CreatedAt: u.CreatedAt,
+			UpdatedAt: u.UpdatedAt,
+			Email:     u.Email,
+		})
+	}
+
+	// write response
+	respondWithJSON(w, http.StatusOK, respUsers)
+}
+
 func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Email string `json:"email"`

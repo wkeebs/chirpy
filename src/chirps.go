@@ -9,6 +9,29 @@ import (
 	"github.com/wkeebs/chirpy/internal/database"
 )
 
+func (cfg *apiConfig) getAllChirpsHandler(w http.ResponseWriter, r *http.Request) {
+	chirps, err := cfg.db.GetAllChirps(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to get Chirps", err)
+		return
+	}
+
+	// map for correct json representation
+	var respChirps []Chirp
+	for _, c := range chirps {
+		respChirps = append(respChirps, Chirp{
+			ID:        c.ID,
+			CreatedAt: c.CreatedAt,
+			UpdatedAt: c.UpdatedAt,
+			Body:      c.Body,
+			UserID:    c.UserID,
+		})
+	}
+
+	// write response
+	respondWithJSON(w, http.StatusOK, respChirps)
+}
+
 func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Body   string    `json:"body"`
