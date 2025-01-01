@@ -25,7 +25,6 @@ type User struct {
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 	Email          string    `json:"email"`
-	HashedPassword string    `json:"hashed_password"`
 }
 
 type Chirp struct {
@@ -88,6 +87,10 @@ func main() {
 	// -- users
 	mux.HandleFunc("GET /api/users", apiCfg.getAllUsersHandler)
 	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
+
+	// -- login
+	mux.HandleFunc("POST /api/login", apiCfg.loginHandler)
+
 
 	// other handlers
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)

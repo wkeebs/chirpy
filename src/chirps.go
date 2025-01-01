@@ -79,7 +79,7 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	// check user exists
-	user, err := cfg.db.GetUser(r.Context(), params.UserID)
+	user, err := cfg.db.GetUserByID(r.Context(), params.UserID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to find user", err)
 		return

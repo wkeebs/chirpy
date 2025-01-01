@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/wkeebs/chirpy/internal/auth"
+	"github.com/wkeebs/chirpy/internal/database"
 )
 
 func (cfg *apiConfig) getAllUsersHandler(w http.ResponseWriter, r *http.Request) {
@@ -44,13 +45,6 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// create user
-	user, err := cfg.db.CreateUser(r.Context(), params.Email)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Failed to create User", nil)
-		return
-	}
-
 	// hash password
 	hashedPassword, err := auth.HashPassword(params.Password)
 	if err != nil {
@@ -58,13 +52,22 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// map from databaser user struct to our own for json tag names
-	respUser := User{
-		ID:             user.ID,
-		CreatedAt:      user.CreatedAt,
-		UpdatedAt:      user.UpdatedAt,
-		Email:          user.Email,
+	// create user
+	user, err := cfg.db.CreateUser(r.Context(), database.CreateUserParams{
+		Email:          params.Email,
 		HashedPassword: hashedPassword,
+	})
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Failed to create User", nil)
+		return
+	}
+
+	// map from databaser user struct
+	respUser := User{
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+		Email:     user.Email,
 	}
 
 	// construct response
