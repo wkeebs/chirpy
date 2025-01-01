@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/wkeebs/chirpy/internal/auth"
 )
 
 func (cfg *apiConfig) getAllUsersHandler(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +31,8 @@ func (cfg *apiConfig) getAllUsersHandler(w http.ResponseWriter, r *http.Request)
 
 func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Email string `json:"email"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 
 	// decode request
@@ -48,12 +51,20 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// hash password
+	hashedPassword, err := auth.HashPassword(params.Password)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error creating User", nil)
+		return
+	}
+
 	// map from databaser user struct to our own for json tag names
 	respUser := User{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
+		ID:             user.ID,
+		CreatedAt:      user.CreatedAt,
+		UpdatedAt:      user.UpdatedAt,
+		Email:          user.Email,
+		HashedPassword: hashedPassword,
 	}
 
 	// construct response

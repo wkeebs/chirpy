@@ -16,7 +16,7 @@ INSERT INTO users (id, created_at, updated_at, email)
 VALUES (
     gen_random_uuid(), NOW(), NOW(), $1
 )
-RETURNING id, created_at, updated_at, email
+RETURNING id, created_at, updated_at, email, hashed_password
 `
 
 func (q *Queries) CreateUser(ctx context.Context, email string) (User, error) {
@@ -27,6 +27,7 @@ func (q *Queries) CreateUser(ctx context.Context, email string) (User, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Email,
+		&i.HashedPassword,
 	)
 	return i, err
 }
@@ -41,7 +42,7 @@ func (q *Queries) DeleteAllUsers(ctx context.Context) error {
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT id, created_at, updated_at, email FROM users ORDER BY users.created_at ASC
+SELECT id, created_at, updated_at, email, hashed_password FROM users ORDER BY users.created_at ASC
 `
 
 func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
@@ -58,6 +59,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Email,
+			&i.HashedPassword,
 		); err != nil {
 			return nil, err
 		}
@@ -73,7 +75,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, created_at, updated_at, email FROM users WHERE users.id = $1
+SELECT id, created_at, updated_at, email, hashed_password FROM users WHERE users.id = $1
 `
 
 func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
@@ -84,6 +86,7 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Email,
+		&i.HashedPassword,
 	)
 	return i, err
 }
