@@ -75,10 +75,16 @@ func main() {
 	fsHandler := apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot))))
 	mux.Handle("/app/", fsHandler) // file server handler
 
-	// api
+	// API
+	// -- healthz
 	mux.HandleFunc("GET /api/healthz", readinessHandler)
+
+	// -- chirps
 	mux.HandleFunc("GET /api/chirps", apiCfg.getAllChirpsHandler)
+	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.getChirpHandler)
 	mux.HandleFunc("POST /api/chirps", apiCfg.createChirpHandler)
+
+	// -- users
 	mux.HandleFunc("GET /api/users", apiCfg.getAllUsersHandler)
 	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
 
