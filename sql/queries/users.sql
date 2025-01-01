@@ -5,5 +5,8 @@ VALUES (
 )
 RETURNING *;
 
+-- name: GetUser :one
+SELECT * FROM users WHERE users.id = $1;
+
 -- name: DeleteAllUsers :exec
 DELETE FROM users;
