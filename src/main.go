@@ -7,15 +7,24 @@ import (
 	"net/http"
 	"os"
 	"sync/atomic"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/wkeebs/chirpy/internal/database"
 )
 
 type apiConfig struct {
-	fileserverHits  atomic.Int32 // thread safe
-	databaseQueries *database.Queries
+	fileserverHits atomic.Int32 // thread safe
+	db             *database.Queries
+}
+
+type User struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -55,29 +64,35 @@ func main() {
 	godotenv.Load() // get env
 
 	// connect to db
-	dbUrl := os.Getenv("DB_URL")
-	db, err := sql.Open("postgres", dbUrl)
-	if err != nil {
-		log.Fatalf("Failed to open database: %s", err)
+	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		log.Fatal("DB_URL must be set")
 	}
-	dbQueries := database.New(db)
 
-	// setup routing
+	dbConn, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("Error opening database: %s", err)
+	}
+	dbQueries := database.New(dbConn)
+
+	// setup serving
 	const filepathRoot = "."
 	const port = "8080"
 	apiCfg := apiConfig{
-		fileserverHits:  atomic.Int32{},
-		databaseQueries: dbQueries,
+		fileserverHits: atomic.Int32{},
+		db:             dbQueries,
 	}
 
 	mux := http.NewServeMux()
 	fsHandler := apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot))))
-	mux.Handle("/app/", fsHandler)
+	mux.Handle("/app/", fsHandler) // file server handler
 
+	// other handlers
 	mux.HandleFunc("GET /api/healthz", readinessHandler)
 	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
 	mux.HandleFunc("POST /api/validate_chirp", validateChirpHandler)
+	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
