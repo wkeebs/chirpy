@@ -95,6 +95,8 @@ func main() {
 	// -- users
 	mux.HandleFunc("GET /api/users", apiCfg.getAllUsersHandler)
 	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
+	mux.HandleFunc("PUT /api/users", apiCfg.updateUserHandler)
+
 
 	// -- login
 	mux.HandleFunc("POST /api/login", apiCfg.loginHandler)

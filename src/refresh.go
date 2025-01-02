@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -20,25 +21,13 @@ func (cfg *apiConfig) refreshHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// look up token
+	isValid := cfg.validateRefreshToken(r, refreshTok)
+	if !isValid {
+		respondWithError(w, http.StatusUnauthorized, "Invalid refresh token", errors.New("Invalid refresh token"))
+	}
+
 	storedToken, err := cfg.db.GetRefreshToken(r.Context(), refreshTok)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Invalid refresh token", err)
-		return
-	}
-
-	// check if the token has been revoked
-	if storedToken.RevokedAt.Valid {
-		respondWithError(w, http.StatusUnauthorized, "Token has been revoked", err)
-		return
-	}
-
-	// check if the token has expired
-	if storedToken.ExpiresAt.Before(time.Now()) {
-		respondWithError(w, http.StatusUnauthorized, "Refresh token has expired", err)
-		return
-	}
-
+	
 	// create new access token for the user
 	user, err := cfg.db.GetUserByID(r.Context(), storedToken.UserID)
 	if err != nil {
@@ -84,4 +73,24 @@ func (cfg *apiConfig) revokeHandler(w http.ResponseWriter, r *http.Request) {
 	// success - respond with 204
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (cfg *apiConfig) validateRefreshToken(r *http.Request, token string) bool {
+	// look up token
+	storedToken, err := cfg.db.GetRefreshToken(r.Context(), token)
+	if err != nil {
+		return false
+	}
+
+	// check if the token has been revoked
+	if storedToken.RevokedAt.Valid {
+		return false
+	}
+
+	// check if the token has expired
+	if storedToken.ExpiresAt.Before(time.Now()) {
+		return false
+	}
+
+	return true
 }
