@@ -140,3 +140,55 @@ func replaceProfanity(s string) string {
 
 	return strings.Join(splitString, " ")
 }
+
+func (cfg *apiConfig) deleteChirpHandler(w http.ResponseWriter, r *http.Request) {
+	// expects:
+	// 1. an access token in the header
+	// 2. the ID of the chirp to delete in the path
+
+	// check access token
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't find access token", err)
+		return
+	}
+
+	// unpack user ID
+	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
+	}
+
+	// unpack chirp id
+	chirpId, err := uuid.Parse(r.PathValue("chirpID"))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Invalid Chirp ID", err)
+		return
+	}
+
+	// check that the chirp exists and is authored by the user
+	storedChirp, err := cfg.db.GetChirp(r.Context(), chirpId)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Chirp does not exist", err)
+		return
+	}
+	if storedChirp.UserID != userID {
+		respondWithError(w, http.StatusForbidden, "User is not the author of the chirp", err)
+		return
+	}
+
+	// delete the chirp
+	cfg.db.DeleteChirp(r.Context(), chirpId)
+
+	// verify it has been deleted
+	_, err = cfg.db.GetChirp(r.Context(), chirpId)
+	if err == nil {
+		respondWithError(w, http.StatusInternalServerError, "Chirp was not deleted correctly", err)
+		return
+	}
+
+	// success - respond with 204
+	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusNoContent)
+}
