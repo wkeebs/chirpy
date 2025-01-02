@@ -18,13 +18,14 @@ type apiConfig struct {
 	fileserverHits atomic.Int32 // thread safe
 	db             *database.Queries
 	platform       string
+	jwtSecret      string
 }
 
 type User struct {
-	ID             uuid.UUID `json:"id"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
-	Email          string    `json:"email"`
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
 }
 
 type Chirp struct {
@@ -50,6 +51,12 @@ func main() {
 		log.Fatal("PLATFORM must be set")
 	}
 
+	// get JWT secret
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET environment variable is not set")
+	}
+
 	// connect to db
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
@@ -69,6 +76,7 @@ func main() {
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
 		platform:       platform,
+		jwtSecret:      jwtSecret,
 	}
 
 	mux := http.NewServeMux()
@@ -90,7 +98,6 @@ func main() {
 
 	// -- login
 	mux.HandleFunc("POST /api/login", apiCfg.loginHandler)
-
 
 	// other handlers
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
