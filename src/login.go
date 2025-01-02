@@ -19,8 +19,8 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	type response struct {
 		User
-		Token        string                `json:"token"`
-		RefreshToken database.RefreshToken `json:"refresh_token"`
+		Token        string `json:"token"`
+		RefreshToken string `json:"refresh_token"`
 	}
 
 	// decode payload
@@ -87,6 +87,6 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 			Email:     user.Email,
 		},
 		Token:        accessToken,
-		RefreshToken: storedRefreshToken,
+		RefreshToken: storedRefreshToken.Token,
 	})
 }
