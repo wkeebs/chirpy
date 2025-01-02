@@ -6,13 +6,16 @@ import (
 	"time"
 
 	"github.com/wkeebs/chirpy/internal/auth"
+	"github.com/wkeebs/chirpy/internal/database"
 )
+
+// refresh tokens expire after 60 days
+const refreshTokenExpiryTime time.Duration = time.Duration(time.Hour) * 24 * 60
 
 func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Password         string `json:"password"`
-		Email            string `json:"email"`
-		ExpiresInSeconds int    `json:"expires_in_seconds"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 	type response struct {
 		User
@@ -43,11 +46,8 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// auth expires in an hour if not set by user
+	// auth expires in an hour
 	expirationTime := time.Hour
-	if params.ExpiresInSeconds > 0 && params.ExpiresInSeconds < 3600 {
-		expirationTime = time.Duration(params.ExpiresInSeconds) * time.Second
-	}
 
 	// create auth JWT
 	accessToken, err := auth.MakeJWT(
@@ -60,6 +60,25 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// create refresh token
+	refreshTok, err := auth.MakeRefreshToken()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create refresh token", err)
+		return
+	}
+
+	// store refresh token in database
+	storedRefreshToken, err := cfg.db.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+		Token:     refreshTok,
+		UserID:    user.ID,
+		ExpiresAt: time.Now().Add(refreshTokenExpiryTime),
+		// RevokedAt is null upon creation
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't store refresh token", err)
+		return
+	}
+
 	// success!
 	respondWithJSON(w, http.StatusOK, response{
 		User: User{
@@ -68,6 +87,7 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt: user.UpdatedAt,
 			Email:     user.Email,
 		},
-		Token: accessToken,
+		Token:        accessToken,
+		RefreshToken: storedRefreshToken.Token,
 	})
 }
