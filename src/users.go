@@ -23,6 +23,7 @@ func (cfg *apiConfig) getAllUsersHandler(w http.ResponseWriter, r *http.Request)
 			CreatedAt: u.CreatedAt,
 			UpdatedAt: u.UpdatedAt,
 			Email:     u.Email,
+			IsPremium: u.IsPremium,
 		})
 	}
 
@@ -68,6 +69,7 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
+		IsPremium: user.IsPremium,
 	}
 
 	// construct response
@@ -130,5 +132,6 @@ func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) 
 		CreatedAt: updatedUser.CreatedAt,
 		UpdatedAt: updatedUser.UpdatedAt,
 		Email:     updatedUser.Email,
+		IsPremium: updatedUser.IsPremium,
 	})
 }

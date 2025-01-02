@@ -26,6 +26,7 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
+	IsPremium bool      `json:"is_chirpy_red"`
 }
 
 type Chirp struct {
@@ -93,12 +94,10 @@ func main() {
 	mux.HandleFunc("POST /api/chirps", apiCfg.createChirpHandler)
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.deleteChirpHandler)
 
-
 	// -- users
 	mux.HandleFunc("GET /api/users", apiCfg.getAllUsersHandler)
 	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
 	mux.HandleFunc("PUT /api/users", apiCfg.updateUserHandler)
-
 
 	// -- login
 	mux.HandleFunc("POST /api/login", apiCfg.loginHandler)
@@ -108,6 +107,9 @@ func main() {
 
 	// -- revoke token
 	mux.HandleFunc("POST /api/revoke", apiCfg.revokeHandler)
+
+	// -- polka (premium webhook simulator)
+	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.upgradeUserHandler)
 
 	// other handlers
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)

@@ -85,6 +85,7 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 			CreatedAt: user.CreatedAt,
 			UpdatedAt: user.UpdatedAt,
 			Email:     user.Email,
+			IsPremium: user.IsPremium,
 		},
 		Token:        accessToken,
 		RefreshToken: storedRefreshToken.Token,
