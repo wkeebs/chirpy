@@ -10,7 +10,7 @@ import (
 )
 
 // refresh tokens expire after 60 days
-const refreshTokenExpiryTime time.Duration = time.Duration(time.Hour) * 24 * 60
+// const refreshTokenExpiryTime time.Duration = time.Duration(time.Hour) * 24 * 60
 
 func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
@@ -19,8 +19,8 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	type response struct {
 		User
-		Token        string `json:"token"`
-		RefreshToken string `json:"refresh_token"`
+		Token        string                `json:"token"`
+		RefreshToken database.RefreshToken `json:"refresh_token"`
 	}
 
 	// decode payload
@@ -69,9 +69,8 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	// store refresh token in database
 	storedRefreshToken, err := cfg.db.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
-		Token:     refreshTok,
-		UserID:    user.ID,
-		ExpiresAt: time.Now().Add(refreshTokenExpiryTime),
+		Token:  refreshTok,
+		UserID: user.ID,
 		// RevokedAt is null upon creation
 	})
 	if err != nil {
@@ -88,6 +87,6 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 			Email:     user.Email,
 		},
 		Token:        accessToken,
-		RefreshToken: storedRefreshToken.Token,
+		RefreshToken: storedRefreshToken,
 	})
 }
