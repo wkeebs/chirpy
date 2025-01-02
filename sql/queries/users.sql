@@ -26,3 +26,9 @@ SET
 WHERE 
     users.id = $1
 RETURNING *;
+
+-- name: UpgradeUserToPremium :one
+UPDATE users
+SET is_premium = true
+WHERE users.id = $1
+RETURNING *;
