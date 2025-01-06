@@ -57,3 +57,9 @@ Chirpy uses a RESTful style of API to serve its data.
 #### /revoke
 
 - **POST /api/revoke** revokes a user's refresh token
+
+## Authentication
+
+All auth in Chirpy is hand-rolled, using JWTs for access tokens, and a simple string refresh token system.
+
+Some endpoints require authentication, with the required access token expected in the `Authorization: Bearer <token>` header format.
