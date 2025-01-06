@@ -37,14 +37,14 @@ Chirpy uses a RESTful style of API to serve its data.
 
 - **GET /api/chirps** serves all existing Chirps
 - **GET /api/chirps/{chirpID}** serves an existing Chirp
-- **POST /api/chirps** accepts the creation of a new Chirp
-- **DELETE /api/chirps/{chirpID}** deletes an existing Chirp
+- **POST /api/chirps** accepts the creation of a new Chirp [AUTHENTICATED]
+- **DELETE /api/chirps/{chirpID}** deletes an existing Chirp [AUTHENTICATED]
 
 #### /users
 
 - **GET /api/users** serves all existing users
 - **POST /api/users** accepts the creation of a new user
-- **PUT /api/users** updates an existing user's details
+- **PUT /api/users** updates an existing user's details [AUTHENTICATED]
 
 #### /login
 
@@ -52,11 +52,11 @@ Chirpy uses a RESTful style of API to serve its data.
 
 #### /refresh
 
-- **POST /api/refresh** accepts a refresh token and returns a new access token
+- **POST /api/refresh** accepts a refresh token and returns a new access token [AUTHENTICATED]
 
 #### /revoke
 
-- **POST /api/revoke** revokes a user's refresh token
+- **POST /api/revoke** revokes a user's refresh token [AUTHENTICATED]
 
 ## Authentication
 
