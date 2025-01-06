@@ -19,6 +19,7 @@ type apiConfig struct {
 	db             *database.Queries
 	platform       string
 	jwtSecret      string
+	polkaKey       string
 }
 
 type User struct {
@@ -58,6 +59,12 @@ func main() {
 		log.Fatal("JWT_SECRET environment variable is not set")
 	}
 
+	// get polka api key
+	polkaKey := os.Getenv("POLKA_KEY")
+	if polkaKey == "" {
+		log.Fatal("POLKA_KEY environment variable is not set")
+	}
+
 	// connect to db
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
@@ -78,6 +85,7 @@ func main() {
 		db:             dbQueries,
 		platform:       platform,
 		jwtSecret:      jwtSecret,
+		polkaKey:       polkaKey,
 	}
 
 	mux := http.NewServeMux()

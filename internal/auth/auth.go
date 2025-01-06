@@ -17,14 +17,11 @@ import (
 type TokenType string
 
 const (
-	// TokenTypeAccess -
 	TokenTypeAccess TokenType = "chirpy-access"
 )
 
-// ErrNoAuthHeaderIncluded -
 var ErrNoAuthHeaderIncluded = errors.New("no auth header included in request")
 
-// HashPassword -
 func HashPassword(password string) (string, error) {
 	dat, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -33,12 +30,10 @@ func HashPassword(password string) (string, error) {
 	return string(dat), nil
 }
 
-// CheckPasswordHash -
 func CheckPasswordHash(password, hash string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 }
 
-// MakeJWT -
 func MakeJWT(
 	userID uuid.UUID,
 	tokenSecret string,
@@ -54,7 +49,6 @@ func MakeJWT(
 	return token.SignedString(signingKey)
 }
 
-// ValidateJWT -
 func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 	claimsStruct := jwt.RegisteredClaims{}
 	token, err := jwt.ParseWithClaims(
@@ -86,7 +80,7 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 	return id, nil
 }
 
-// GetBearerToken -
+// extracts the access token from HTTP headers
 func GetBearerToken(headers http.Header) (string, error) {
 	authHeader := headers.Get("Authorization")
 	if authHeader == "" {
@@ -100,7 +94,7 @@ func GetBearerToken(headers http.Header) (string, error) {
 	return splitAuth[1], nil
 }
 
-// MakeRefreshToken -
+// creates a new refresh token
 func MakeRefreshToken() (string, error) {
 	// get random data
 	dat := make([]byte, 32)
@@ -111,4 +105,18 @@ func MakeRefreshToken() (string, error) {
 	// cast to string
 	datStr := hex.EncodeToString(dat)
 	return datStr, nil
+}
+
+// extracts an API key from HTTP headers
+func GetAPIKey(headers http.Header) (string, error) {
+	authHeader := headers.Get("Authorization")
+	if authHeader == "" {
+		return "", ErrNoAuthHeaderIncluded
+	}
+	splitAuth := strings.Split(authHeader, " ")
+	if len(splitAuth) < 2 || splitAuth[0] != "ApiKey" {
+		return "", errors.New("malformed authorization header")
+	}
+
+	return splitAuth[1], nil
 }
